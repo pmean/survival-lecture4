@@ -23,10 +23,10 @@ library(tidyr)
 Recall that we ran a log rank test for gender using the WHAS100 data file. Let's calculate a Cox regression model for the same data and compare it to the log rank test.
 
 ```{r read}
-fn <- "~/survival-models/bin/whas100.RData" 
+fn <- "../../data/whas100.RData" 
 load(fn)
 head(whas100)
-fn <- "~/survival-models/bin/whas500.RData" 
+fn <- "../../data/whas500.RData" 
 load(fn)
 whas500$time_yrs <- whas500$lenfol/365.25
 head(whas500)
@@ -116,6 +116,21 @@ cox_bmi <-
   coxph(Surv(time_yrs, fstat=="Dead")~bmi,
     data=whas500)
 summary(cox_bmi)
+n_bmi <- data.frame(bmi=c(20, 30, 40))
+predict_bmi <- survfit(cox_bmi, newdata=n_bmi)
+par(mar=c(2.1, 2.1, 0.6, 0.6))
+plot(
+  predict_bmi$time,
+  predict_bmi$surv[, 1], 
+  type="s", ylim=c(0,1))
+lines(
+  predict_bmi$time, 
+  predict_bmi$surv[, 2], 
+  type="s", lty="dotted")
+lines(
+  predict_bmi$time, 
+  predict_bmi$surv[, 3], 
+  type="s", lty="dashed")
 ggplot(data=whas500) +
   geom_boxplot(aes(x=gender, y=bmi))
 ggplot(data=whas500) +
@@ -124,7 +139,7 @@ cox_bmi_adj <-
   coxph(Surv(time_yrs, fstat=="Dead")~bmi+age+i_female,
     data=whas500)
 summary(cox_bmi_adj)
-n_bmi <- data.frame(age=overall_mean, i_female=0.4, bmi=c(20, 30, 40))
+n_bmi <- data.frame(age=overall_mean, i_female=1, bmi=c(20, 30, 40))
 predict_bmi <- survfit(cox_bmi_adj, newdata=n_bmi)
 par(mar=c(2.1, 2.1, 0.6, 0.6))
 plot(
@@ -305,25 +320,8 @@ coxph(Surv(time_yrs, fstat=="Dead")~miord, data=whas500)
 coxph(Surv(time_yrs, fstat=="Dead")~mitype, data=whas500)
 ```
 
-Additonal topics to cover.
-
-* AIC
-
-* GBCS data, hormone, nodes model
-
-* Table 4.13. Gender by age interaction. Predict hazard ratio for gender at age=40, 50, 60, 65, 85, 90. Also see Table 4.14.
-
-* Define risk scores, page 126-130.
-
-* Discuss stepwise selection.
-
-* Fractional polynomials, or maybe smoothing splines.
-  splines::ns, survival::pspline, rms::rcs
-
-
-
 Save everything for possible later re-use.
 
 ```{r save-everything}
-save.image("~/survival-models/bin/survival-lecture-4.RData")
+save.image("../../data/class4.RData")
 ```

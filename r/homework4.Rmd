@@ -15,7 +15,7 @@ library(ggplot2)
 library(magrittr)
 library(survival)
 library(tidyr)
-fn <- "~/survival-models/bin/whas500.RData"
+fn <- "../../data/whas500.RData"
 load(fn)
 head(whas500)
 ```
