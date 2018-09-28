@@ -54,6 +54,9 @@ lines(
   cox_predict$time, 
   cox_predict$surv[, 1], 
   type="s", lty="dotted")
+five_year <- which.min(abs(cox_predict$time-5))
+y <- cox_predict$surv[five_year, ]+0.05
+text(5, y, c("M", "F"))
 cox_mv <- 
   coxph(Surv(time_yrs, fstat=="Dead")~age+gender,
     data=whas500)
@@ -93,6 +96,9 @@ lines(
   predict_unadjusted$time, 
   predict_unadjusted$surv[, 1], 
   type="s", lty="dotted")
+five_year <- which.min(abs(predict_unadjusted$time-5))
+y <- predict_unadjusted$surv[five_year, ]+0.05
+text(5, y, c("M", "F"))
 
 n_adjusted <- 
   data.frame(
@@ -108,6 +114,9 @@ lines(
   predict_adjusted$time, 
   predict_adjusted$surv[, 1], 
   type="s", lty="dotted")
+five_year <- which.min(abs(predict_adjusted$time-5))
+y <- predict_adjusted$surv[five_year, ]+0.05
+text(5, y, c("M", "F"))
 ```
 
 ```{r compare-age-and-bmi, fig.width=4.5, fig.height=2.5}
@@ -131,6 +140,9 @@ lines(
   predict_bmi$time, 
   predict_bmi$surv[, 3], 
   type="s", lty="dashed")
+five_year <- which.min(abs(predict_bmi$time-5))
+y <- predict_bmi$surv[five_year, ]+0.05
+text(5, y, c(20, 30, 40))
 ggplot(data=whas500) +
   geom_boxplot(aes(x=gender, y=bmi))
 ggplot(data=whas500) +
@@ -154,6 +166,9 @@ lines(
   predict_bmi$time, 
   predict_bmi$surv[, 3], 
   type="s", lty="dashed")
+five_year <- which.min(abs(predict_bmi$time-5))
+y <- predict_bmi$surv[five_year, ]+0.05
+text(5, y, c(20, 30, 40))
 ```
 
 Look at the interaction.
