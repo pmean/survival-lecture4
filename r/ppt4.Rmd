@@ -22,6 +22,15 @@ library(survival)
 library(tidyr, warn.conflicts=FALSE, quietly=TRUE)
 ```
 
+## Advantages of a multivariate model
+
+1. Your predictions are better with two (or more) independent variables.
+
+2. You can use covariates to make risk adjustments.
+
+3. You can explore interactions among variables.
+
+
 ## Review the whas500 data set
 
 ```{r read}
@@ -33,11 +42,11 @@ head(whas500, n=2)
 
 ## Model fitting strategies
 
-Fit univariate models first.
+1. Fit univariate models first.
 
-Add variables one at a time or in very small batches.
+2. Add variables one at a time or in very small batches.
 
-Look at interactions and nonlinearities last.
+3. Look at interactions and nonlinearities last.
 
 ## Univariate model for age
 
@@ -123,7 +132,6 @@ age_diff <- gender_means[2]-gender_means[1]
 ggplot(whas500, aes(x=gender, y=age)) +
   geom_boxplot()
 coef_mv <- tidy(cox_mv)
-coef_mv
 hr_age <- exp(coef_mv[coef_mv$term=="age", "estimate"])
 extrapolated_hr <- hr_age^age_diff
 ```
@@ -395,25 +403,35 @@ res_plot <- ggplot(data=whas500, aes(mitype, r)) +
 suppressMessages(print(res_plot))
 ```
 
-## Header
+## Using splines to model non-linearities
 
 ```{r spline, fig.width=4.5, fig.height=2.5}
 cox_pspline3 <- coxph(
   Surv(time_yrs, fstat=="Dead") ~ 
     bmi+pspline(age, df=3)+gender,
       data=whas500)
+terms_pspline3 <- predict(cox_pspline3, type="terms")
+par(mar=c(2.6, 2.6, 0.6, 0.6))
+o <- order(whas500$age)
+plot(whas500$age[o], terms_pspline3[o ,2], type="l")
+```
 
+## An 8 df spline (overfitting?)
+
+```{r overfitting, fig.width=4.5, fig.height=2.5}
 cox_pspline8 <- coxph(
   Surv(time_yrs, fstat=="Dead") ~ 
     bmi+pspline(age, df=8)+gender,
       data=whas500)
-
-terms_pspline3 <- predict(cox_pspline3, type="terms")
 terms_pspline8 <- predict(cox_pspline8, type="terms")
+
 par(mar=c(2.6, 2.6, 0.6, 0.6))
-o <- order(whas500$age)
-plot(whas500$age[o], terms_pspline3[o ,2], type="l")
 plot(whas500$age[o], terms_pspline8[o ,2], type="l")
+```
+
+## Comparing linear model to two splines
+
+```{r comparing-splines}
 glance(cox_bmi_adj) %>%
   bind_rows(glance(cox_pspline3)) %>%
   bind_rows(glance(cox_pspline8)) %>%
@@ -425,24 +443,28 @@ glance(cox_bmi_adj) %>%
 compare_splines
 ```
 
-## Header
 
-Testing.
+## Next time - testing proportional hazards
 
-## Header
+1. Patterns in Kaplan-Meier curves
 
-```{r other-models}
-coxph(Surv(time_yrs, fstat=="Dead")~hr, data=whas500)
-coxph(Surv(time_yrs, fstat=="Dead")~sysbp, data=whas500)
-coxph(Surv(time_yrs, fstat=="Dead")~diasbp, data=whas500)
-coxph(Surv(time_yrs, fstat=="Dead")~cvd, data=whas500)
-coxph(Surv(time_yrs, fstat=="Dead")~afb, data=whas500)
-coxph(Surv(time_yrs, fstat=="Dead")~sho, data=whas500)
-coxph(Surv(time_yrs, fstat=="Dead")~chf, data=whas500)
-coxph(Surv(time_yrs, fstat=="Dead")~av3, data=whas500)
-coxph(Surv(time_yrs, fstat=="Dead")~miord, data=whas500)
-coxph(Surv(time_yrs, fstat=="Dead")~mitype, data=whas500)
-```
+2. Complementary log-log plot
+
+3. Schoenfeld Residuals
+
+4. Fit time varying covariates
+
+## What have you learned today?
+
+1. The Cox regression model allows for multiple independent variables and interactions.
+
+2. The predicted survival curve estimated at a common covariate mean produces a risk-adjusted comparison.
+
+3. A positive martingale residual implies a death earlier than expected.
+
+
+
+
 
 ```{r save-everything}
 save.image("../../data/class4.RData")
