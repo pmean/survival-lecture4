@@ -55,14 +55,14 @@ display_ci <- function(tidy_object) {
   tidy_object %>%
     mutate(conf.int=paste0(
       round(exp(conf.low), 2),
-      " to ",
+      "-",
       round(exp(conf.high), 2)
     ))
 }
 display_pv <- function(tidy_object) {
   tidy_object %>%
     mutate(p.value=round(p.value, 3)) %>%
-    mutate(p.value=max(p.value, 0.001))    
+    mutate(p.value=pmax(p.value, 0.001))    
 }
 clean_table <- function(cox_object) {
   cox_object %>%
@@ -461,10 +461,6 @@ compare_splines
 2. The predicted survival curve estimated at a common covariate mean produces a risk-adjusted comparison.
 
 3. A positive martingale residual implies a death earlier than expected.
-
-
-
-
 
 ```{r save-everything}
 save.image("../../data/class4.RData")
