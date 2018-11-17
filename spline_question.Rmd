@@ -1,0 +1,112 @@
+---
+title: "Spline question"
+author: "Steve Simon"
+date: "11/17/2018"
+output: html_document
+graphics: yes
+---
+
+Hi Dr. Simon,
+
+I had a couple questions about the homework for module 4. In particular, question 1B, where we are calculating a cubic spline model for systolic blood pressure with four degrees of freedom.
+
+(note - I'm using R for my work)
+
+Please see the attachment.
+
+1) How do we interpret the coeff and p values here – do we say that the linear effect of sysbp is significant (p=.03) but that the spline effect of sysbp is not (p=.05)?
+
+2) However, when we plot the linear effect of sysbp against the spline effect, we see it deviates from being linear, which would suggest we want to make use of the spline effect… correct? Also, the loglik seems to indicate that the spline is the better fit…
+
+3) Lastly, why does R report the AIC and BIC for the spline as “NA”?
+
+Many thanks!
+Ethan
+
+
+```{r load-libraries}
+library(broom)
+library(dplyr)
+library(ggplot2)
+library(magrittr)
+library(survival)
+library(tidyr)
+fn <- "../data/whas500.RData"
+load(fn)
+head(whas500)
+```
+
+Fit a linear effect of sysbp and a penalized spline with four degrees of freedom.
+
+```{r calculate-spline}
+cox_sysbp <- coxph(
+  Surv(time_yrs, fstat=="Dead")~sysbp,
+    data=whas500)
+cox_pspline4 <- coxph(
+  Surv(time_yrs, fstat=="Dead") ~ 
+    pspline(sysbp, df=4),
+      data=whas500)
+cox_sysbp
+cox_pspline4
+```
+
+Plot this spline and offer an informal assessment as
+to whether your spline function deviates markedly 
+from a linear relationship.
+
+```{r plot-spline, eval=FALSE}
+terms_pspline4 <- predict(cox_pspline4, type="terms")
+par(mar=c(2.6, 2.6, 0.6, 0.6))
+o <- order(whas500$sysbp)
+bmp(file="images/spline1.bmp")
+plot(whas500$sysbp[o], terms_pspline4[o , 1], type="l")
+dev.off()
+```
+
+Here are some summary statistics.
+
+```{r summary}
+glance(cox_sysbp)                 %>%
+  bind_rows(glance(cox_pspline4)) %>%
+  mutate(lab=c(
+    "linear (df=1)",
+    "spline (df=4)"))             %>%
+  select(lab, logLik, AIC, BIC)   -> compare_splines
+compare_splines
+```
+
+Notice that the plot does not include standard errors. This is easily fixed.
+
+```{r termplot, eval=FALSE}
+bmp("images/spline2.bmp")
+termplot(cox_pspline4, term=1, se=TRUE, col.term=1, col.se=1)
+dev.off()
+```
+
+There's an important difference between this plot and the earlier one (other than the standard error). The earlier plot shows the nonlinear component after the linear component has been removed. The later plot shows the full spline fit, including the linear component.
+
+The tests listed are a bit confusing. It would be better to use the anova function. First compare the spline fit to a null model.
+
+```{r spline-vs-null}
+anova(cox_pspline4)
+```
+
+Next compare a spline model to a linear model.
+
+```{r spline-vs-linear}
+anova(cox_sysbp, cox_pspline4)
+```
+
+You can get the AIC for the linear model.
+
+```{r aic-linear}
+AIC(cox_sysbp)
+```
+
+but not for the penalized spline.
+
+```{r aic-pspline}
+AIC(cox_pspline4)
+```
+
+I'm not sure why this is, but I suspect it is related to the fact that a penalized spline only has an approximate degrees of freedom.
