@@ -25,13 +25,13 @@ Ethan
 
 
 ```{r load-libraries}
-library(broom)
-library(dplyr)
-library(ggplot2)
-library(magrittr)
-library(survival)
-library(tidyr)
-fn <- "../data/whas500.RData"
+suppressMessages(suppressWarnings(library(broom)))
+suppressMessages(suppressWarnings(library(dplyr)))
+suppressMessages(suppressWarnings(library(ggplot2)))
+suppressMessages(suppressWarnings(library(magrittr)))
+suppressMessages(suppressWarnings(library(survival)))
+suppressMessages(suppressWarnings(library(tidyr)))
+fn <- "../../data/whas500.RData"
 load(fn)
 head(whas500)
 ```
@@ -50,20 +50,29 @@ cox_sysbp
 cox_pspline4
 ```
 
-Plot this spline and offer an informal assessment as
-to whether your spline function deviates markedly 
-from a linear relationship.
+First things first. The coefficients in any spline model are impossible to interpret. For the linear fit, the negative coefficient tells you that as sysbp increases, the hazard decreases. But the wide range of coefficients in a penalized spline are just plain confusing.
 
-```{r plot-spline, eval=FALSE}
+```{r coef}
+coef(cox_sysbp)
+coef(cox_pspline4)
+```
+
+You should plot the spline function on the y-axis against the original variable on the x-axis.
+
+```{r plot-spline}
 terms_pspline4 <- predict(cox_pspline4, type="terms")
 par(mar=c(2.6, 2.6, 0.6, 0.6))
 o <- order(whas500$sysbp)
-bmp(file="images/spline1.bmp")
 plot(whas500$sysbp[o], terms_pspline4[o , 1], type="l")
-dev.off()
 ```
 
-Here are some summary statistics.
+The problem with this plot is that you don't have standard errors to judge the statistical significance of the spline. Use the termplot function to get a plot with error bounds.
+
+```{r termplot}
+termplot(cox_pspline4, term=1, se=TRUE, col.term=1, col.se=1)
+```
+
+The summary statistics produced by the glance function in broom are a bit confusing.
 
 ```{r summary}
 glance(cox_sysbp)                 %>%
@@ -75,17 +84,7 @@ glance(cox_sysbp)                 %>%
 compare_splines
 ```
 
-Notice that the plot does not include standard errors. This is easily fixed.
-
-```{r termplot, eval=FALSE}
-bmp("images/spline2.bmp")
-termplot(cox_pspline4, term=1, se=TRUE, col.term=1, col.se=1)
-dev.off()
-```
-
-There's an important difference between this plot and the earlier one (other than the standard error). The earlier plot shows the nonlinear component after the linear component has been removed. The later plot shows the full spline fit, including the linear component.
-
-The tests listed are a bit confusing. It would be better to use the anova function. First compare the spline fit to a null model.
+It would be better to use the anova function. First compare the spline fit to a null model.
 
 ```{r spline-vs-null}
 anova(cox_pspline4)
@@ -110,3 +109,35 @@ AIC(cox_pspline4)
 ```
 
 I'm not sure why this is, but I suspect it is related to the fact that a penalized spline only has an approximate degrees of freedom.
+
+The restricted cubic splines in Frank Harrell's rms package can provide an alternative to the penalized splines.
+
+```{r rcs}
+suppressMessages(suppressWarnings(library(rms)))
+cox_rcs <- coxph(
+  Surv(time_yrs, fstat=="Dead") ~ 
+    rcs(sysbp, df=4),
+      data=whas500)
+cox_rcs
+```
+
+The coefficients are still rather cryptic.
+
+```{r coeff-rcs}
+coef(cox_rcs)
+```
+
+The plot is somewhat similar to the penalized spline.
+
+```{r rcs-plot}
+termplot(cox_rcs, se=TRUE, col.term=1, col.se=1)
+```
+
+You can get a formal test and the AIC for the restricted cubic spline. The formulation of the restricted cubic spline provides an exact degrees of freedom.
+
+```{r rcs-aic}
+anova(cox_rcs)
+anova(cox_sysbp, cox_rcs)
+AIC(cox_sysbp)
+AIC(cox_rcs)
+```
